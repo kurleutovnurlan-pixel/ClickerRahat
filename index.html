@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Clicker Pro + Share</title>
+    <title>Mega Clicker: Evolution</title>
     <style>
         body {
             display: flex;
@@ -12,73 +12,85 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            background: radial-gradient(circle, #1a1a2e, #0f0f1a);
+            background: #1a1a2e; /* Начальный фон */
             color: white;
             font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
+            transition: background 1s ease; /* Плавная смена фона */
+            overflow-x: hidden;
             user-select: none;
         }
 
         #score-container {
-            font-size: 64px;
+            font-size: clamp(48px, 10vw, 72px);
             font-weight: 900;
             color: #00ffcc;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
             margin-bottom: 5px;
-            text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
         }
 
-        .stat {
-            font-size: 18px;
-            color: #888;
-            margin-bottom: 25px;
+        .level-text {
+            font-size: 20px;
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         #click-button {
-            width: 180px;
-            height: 180px;
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
-            border: 8px solid #333;
+            border: 10px solid rgba(255,255,255,0.1);
             background: #222;
             color: white;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.05s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
         }
 
-        #click-button:active { transform: scale(0.9); border-color: #00ffcc; }
+        #click-button:active { transform: scale(0.85); }
 
         .shop {
             margin-top: 30px;
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
-            width: 280px;
+            width: 90%;
+            max-width: 400px;
         }
 
         .upgrade-btn {
-            background: #252535;
-            border: 2px solid #444;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            align-items: center;
+            font-size: 14px;
         }
 
-        .upgrade-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .upgrade-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .upgrade-btn b { color: #00ffcc; margin-top: 5px; }
 
-        .share-btn {
-            margin-top: 15px;
-            background: #007bff;
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .small-btn {
+            background: #333;
             border: none;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
+            color: #888;
+            padding: 8px 15px;
+            border-radius: 5px;
             cursor: pointer;
-            font-weight: bold;
+            font-size: 12px;
         }
 
         .floating-text {
@@ -90,60 +102,103 @@
         }
 
         @keyframes moveUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-100px); opacity: 0; }
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-120px) scale(1.5); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
     <div id="score-container">0</div>
-    <div class="stat">Клик: +<span id="per-click">1</span> | Авто: <span id="auto-val">0</span>/сек</div>
-
+    <div class="level-text" id="level-name">Новичок</div>
+    
     <button id="click-button">КЛИК!</button>
 
     <div class="shop">
         <button class="upgrade-btn" id="upg-click">
-            <span>Сила клика</span> <span id="price-click">15</span>
+            Сила клика (+1)
+            <b id="price-click">15</b>
         </button>
         <button class="upgrade-btn" id="upg-auto">
-            <span>Авто-клик</span> <span id="price-auto">50</span>
+            Авто-клик (+1/с)
+            <b id="price-auto">50</b>
         </button>
-        
-        <button class="share-btn" onclick="shareProgress()">ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ</button>
-        
-        <button class="upgrade-btn" style="background:#442222; margin-top: 20px;" onclick="resetGame()">
-            <span>СБРОСИТЬ ВСЁ</span>
+        <button class="upgrade-btn" id="upg-mega">
+            Мега-клик (+10)
+            <b id="price-mega">500</b>
+        </button>
+        <button class="upgrade-btn" id="upg-farm">
+            Ферма (+15/с)
+            <b id="price-farm">2000</b>
         </button>
     </div>
 
-    <script>
-        // Загрузка или стандарт
-        let score, clickPower, autoClick, clickPrice, autoPrice;
+    <div class="controls">
+        <button class="small-btn" onclick="shareProgress()">ПОДЕЛИТЬСЯ</button>
+        <button class="small-btn" onclick="resetGame()">СБРОС</button>
+    </div>
 
-        function loadData() {
+    <script>
+        let score, clickPower, autoClick, prices;
+
+        function init() {
             score = parseFloat(localStorage.getItem('score')) || 0;
             clickPower = parseInt(localStorage.getItem('clickPower')) || 1;
             autoClick = parseInt(localStorage.getItem('autoClick')) || 0;
-            clickPrice = parseInt(localStorage.getItem('clickPrice')) || 15;
-            autoPrice = parseInt(localStorage.getItem('autoPrice')) || 50;
+            
+            // Загружаем цены как объект
+            const savedPrices = localStorage.getItem('prices');
+            prices = savedPrices ? JSON.parse(savedPrices) : {
+                click: 15,
+                auto: 50,
+                mega: 500,
+                farm: 2000
+            };
+            updateDisplay();
         }
 
         function updateDisplay() {
             document.getElementById('score-container').textContent = Math.floor(score);
-            document.getElementById('per-click').textContent = clickPower;
-            document.getElementById('auto-val').textContent = autoClick;
-            document.getElementById('price-click').textContent = clickPrice;
-            document.getElementById('price-auto').textContent = autoPrice;
-            
-            document.getElementById('upg-click').disabled = score < clickPrice;
-            document.getElementById('upg-auto').disabled = score < autoPrice;
+            document.getElementById('price-click').textContent = prices.click;
+            document.getElementById('price-auto').textContent = prices.auto;
+            document.getElementById('price-mega').textContent = prices.mega;
+            document.getElementById('price-farm').textContent = prices.farm;
 
+            // Блокировка кнопок
+            document.getElementById('upg-click').disabled = score < prices.click;
+            document.getElementById('upg-auto').disabled = score < prices.auto;
+            document.getElementById('upg-mega').disabled = score < prices.mega;
+            document.getElementById('upg-farm').disabled = score < prices.farm;
+
+            updateTheme();
+            save();
+        }
+
+        function updateTheme() {
+            const body = document.body;
+            const lvl = document.getElementById('level-name');
+            
+            if (score < 100) {
+                body.style.background = "#1a1a2e";
+                lvl.textContent = "Новичок";
+            } else if (score < 1000) {
+                body.style.background = "#2e1a1a";
+                lvl.textContent = "Начинающий кликер";
+            } else if (score < 10000) {
+                body.style.background = "#1a2e1a";
+                lvl.textContent = "Мастер кликов";
+                document.getElementById('score-container').style.color = "#ffd700";
+            } else {
+                body.style.background = "#2e1a2e";
+                lvl.textContent = "Легенда";
+            }
+        }
+
+        function save() {
             localStorage.setItem('score', score);
             localStorage.setItem('clickPower', clickPower);
             localStorage.setItem('autoClick', autoClick);
-            localStorage.setItem('clickPrice', clickPrice);
-            localStorage.setItem('autoPrice', autoPrice);
+            localStorage.setItem('prices', JSON.stringify(prices));
         }
 
         function spawnText(x, y, text) {
@@ -155,57 +210,48 @@
             setTimeout(() => el.remove(), 800);
         }
 
+        // Клики
         document.getElementById('click-button').addEventListener('click', (e) => {
             score += clickPower;
             spawnText(e.clientX, e.clientY, clickPower);
             updateDisplay();
         });
 
-        document.getElementById('upg-click').addEventListener('click', () => {
-            if (score >= clickPrice) {
-                score -= clickPrice;
-                clickPower++;
-                clickPrice = Math.round(clickPrice * 1.6);
+        // Покупки
+        function buy(type, amount, isAuto) {
+            if (score >= prices[type]) {
+                score -= prices[type];
+                if (isAuto) autoClick += amount; else clickPower += amount;
+                prices[type] = Math.round(prices[type] * 1.6);
                 updateDisplay();
             }
-        });
+        }
 
-        document.getElementById('upg-auto').addEventListener('click', () => {
-            if (score >= autoPrice) {
-                score -= autoPrice;
-                autoClick++;
-                autoPrice = Math.round(autoPrice * 1.8);
-                updateDisplay();
-            }
-        });
+        document.getElementById('upg-click').onclick = () => buy('click', 1, false);
+        document.getElementById('upg-auto').onclick = () => buy('auto', 1, true);
+        document.getElementById('upg-mega').onclick = () => buy('mega', 10, false);
+        document.getElementById('upg-farm').onclick = () => buy('farm', 15, true);
 
         setInterval(() => {
             if (autoClick > 0) {
-                score += autoClick;
+                score += autoClick / 10; // Дробное прибавление для плавности
                 updateDisplay();
             }
-        }, 1000);
+        }, 100);
 
-        // ФИКС СБРОСА
         function resetGame() {
-            if(confirm("Точно сбросить весь прогресс?")) {
+            if(confirm("Сбросить всё?")) {
                 localStorage.clear();
-                loadData(); // Перезагружаем переменные в коде
-                updateDisplay(); // Обновляем экран
-                alert("Прогресс обнулен!");
+                location.reload();
             }
         }
 
-        // ФУНКЦИЯ ПОДЕЛИТЬСЯ
         function shareProgress() {
-            const text = `Я набрал ${Math.floor(score)} очков в ClickerRahat! Моя сила клика: ${clickPower}. Попробуй обойти меня: ${window.location.href}`;
-            navigator.clipboard.writeText(text).then(() => {
-                alert("Текст скопирован! Отправь его друзьям.");
-            });
+            const text = `Я на уровне "${document.getElementById('level-name').textContent}" в ClickerRahat! Очков: ${Math.floor(score)}. Сможешь лучше? ${window.location.href}`;
+            navigator.clipboard.writeText(text).then(() => alert("Скопировано!"));
         }
 
-        loadData();
-        updateDisplay();
+        init();
     </script>
 </body>
 </html>
