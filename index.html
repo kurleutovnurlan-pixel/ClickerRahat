@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mega Clicker: Evolution</title>
+    <title>Clicker Empire: Roulette Edition</title>
     <style>
         body {
             display: flex;
@@ -12,246 +12,214 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            background: #1a1a2e; /* Начальный фон */
+            background: #111;
             color: white;
             font-family: 'Segoe UI', sans-serif;
-            transition: background 1s ease; /* Плавная смена фона */
-            overflow-x: hidden;
+            transition: 0.5s;
             user-select: none;
+            text-align: center;
         }
 
         #score-container {
-            font-size: clamp(48px, 10vw, 72px);
+            font-size: 60px;
             font-weight: 900;
             color: #00ffcc;
-            text-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
-            margin-bottom: 5px;
+            margin: 10px 0;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
         }
 
-        .level-text {
-            font-size: 20px;
-            color: #ffd700;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+        .stat-bar { font-size: 16px; color: #888; margin-bottom: 20px; }
 
+        /* Кнопка клика */
         #click-button {
-            width: 200px;
-            height: 200px;
+            width: 160px; height: 160px;
             border-radius: 50%;
-            border: 10px solid rgba(255,255,255,0.1);
+            border: 8px solid #333;
             background: #222;
             color: white;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.05s;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
+        #click-button:active { transform: scale(0.9); border-color: #00ffcc; }
 
-        #click-button:active { transform: scale(0.85); }
+        /* Рулетка */
+        .roulette-box {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 2px dashed #555;
+            width: 320px;
+        }
+        .roulette-btn {
+            background: #ff9800;
+            border: none;
+            color: black;
+            padding: 10px 20px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .roulette-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        /* Сетка магазина */
         .shop {
-            margin-top: 30px;
+            margin-top: 25px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            width: 90%;
-            max-width: 400px;
+            width: 350px;
         }
-
         .upgrade-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #222;
+            border: 1px solid #444;
             color: white;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 13px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            font-size: 14px;
         }
-
-        .upgrade-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .upgrade-btn b { color: #00ffcc; margin-top: 5px; }
-
-        .controls {
-            margin-top: 25px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .small-btn {
-            background: #333;
-            border: none;
-            color: #888;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-        }
+        .upgrade-btn:disabled { opacity: 0.3; }
+        .upgrade-btn b { color: #00ffcc; }
 
         .floating-text {
             position: absolute;
-            color: #00ffcc;
             font-weight: bold;
             pointer-events: none;
             animation: moveUp 0.8s ease-out forwards;
         }
-
         @keyframes moveUp {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-120px) scale(1.5); opacity: 0; }
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
     <div id="score-container">0</div>
-    <div class="level-text" id="level-name">Новичок</div>
-    
+    <div class="stat-bar">Клик: +<span id="p-click">1</span> | Авто: <span id="p-auto">0</span>/с</div>
+
     <button id="click-button">КЛИК!</button>
 
-    <div class="shop">
-        <button class="upgrade-btn" id="upg-click">
-            Сила клика (+1)
-            <b id="price-click">15</b>
-        </button>
-        <button class="upgrade-btn" id="upg-auto">
-            Авто-клик (+1/с)
-            <b id="price-auto">50</b>
-        </button>
-        <button class="upgrade-btn" id="upg-mega">
-            Мега-клик (+10)
-            <b id="price-mega">500</b>
-        </button>
-        <button class="upgrade-btn" id="upg-farm">
-            Ферма (+15/с)
-            <b id="price-farm">2000</b>
-        </button>
+    <div class="roulette-box">
+        <div>🎰 РУЛЕТКА (Цена: <span id="r-price">100</span>)</div>
+        <div id="r-result" style="font-size: 14px; margin-top: 5px; color: #ffeb3b;">Испытай удачу!</div>
+        <button class="roulette-btn" id="btn-roll">КРУТИТЬ</button>
     </div>
 
-    <div class="controls">
-        <button class="small-btn" onclick="shareProgress()">ПОДЕЛИТЬСЯ</button>
-        <button class="small-btn" onclick="resetGame()">СБРОС</button>
+    <div class="shop">
+        <button class="upgrade-btn" onclick="buy('c1', 1, false)">Палец (+1) <b id="pr-c1">15</b></button>
+        <button class="upgrade-btn" onclick="buy('a1', 1, true)">Курсор (+1/с) <b id="pr-a1">50</b></button>
+        <button class="upgrade-btn" onclick="buy('c2', 10, false)">Меч (+10) <b id="pr-c2">500</b></button>
+        <button class="upgrade-btn" onclick="buy('a2', 15, true)">Ферма (+15/с) <b id="pr-a2">2000</b></button>
+        <button class="upgrade-btn" onclick="buy('c3', 100, false)">Завод (+100) <b id="pr-c3">10000</b></button>
+        <button class="upgrade-btn" onclick="buy('a3', 150, true)">ИИ (+150/с) <b id="pr-a3">50000</b></button>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <button onclick="shareProgress()" style="background:none; border:1px solid #555; color:#888; cursor:pointer; padding:5px 10px; border-radius:5px;">Поделиться</button>
+        <button onclick="resetGame()" style="background:none; border:none; color:#444; cursor:pointer; margin-left:10px;">Сброс</button>
     </div>
 
     <script>
-        let score, clickPower, autoClick, prices;
+        let score = parseFloat(localStorage.getItem('score')) || 0;
+        let cPower = parseInt(localStorage.getItem('cPower')) || 1;
+        let aPower = parseInt(localStorage.getItem('aPower')) || 0;
+        let rPrice = parseInt(localStorage.getItem('rPrice')) || 100;
+        
+        let pr = JSON.parse(localStorage.getItem('pr')) || {
+            c1: 15, a1: 50, c2: 500, a2: 2000, c3: 10000, a3: 50000
+        };
 
-        function init() {
-            score = parseFloat(localStorage.getItem('score')) || 0;
-            clickPower = parseInt(localStorage.getItem('clickPower')) || 1;
-            autoClick = parseInt(localStorage.getItem('autoClick')) || 0;
-            
-            // Загружаем цены как объект
-            const savedPrices = localStorage.getItem('prices');
-            prices = savedPrices ? JSON.parse(savedPrices) : {
-                click: 15,
-                auto: 50,
-                mega: 500,
-                farm: 2000
-            };
-            updateDisplay();
-        }
-
-        function updateDisplay() {
+        function update() {
             document.getElementById('score-container').textContent = Math.floor(score);
-            document.getElementById('price-click').textContent = prices.click;
-            document.getElementById('price-auto').textContent = prices.auto;
-            document.getElementById('price-mega').textContent = prices.mega;
-            document.getElementById('price-farm').textContent = prices.farm;
+            document.getElementById('p-click').textContent = cPower;
+            document.getElementById('p-auto').textContent = aPower;
+            document.getElementById('r-price').textContent = rPrice;
 
-            // Блокировка кнопок
-            document.getElementById('upg-click').disabled = score < prices.click;
-            document.getElementById('upg-auto').disabled = score < prices.auto;
-            document.getElementById('upg-mega').disabled = score < prices.mega;
-            document.getElementById('upg-farm').disabled = score < prices.farm;
+            // Обновление цен в кнопках
+            for(let key in pr) document.getElementById('pr-'+key).textContent = pr[key];
 
-            updateTheme();
-            save();
+            // Доступность кнопок
+            document.getElementById('btn-roll').disabled = score < rPrice;
+            
+            localStorage.setItem('score', score);
+            localStorage.setItem('cPower', cPower);
+            localStorage.setItem('aPower', aPower);
+            localStorage.setItem('rPrice', rPrice);
+            localStorage.setItem('pr', JSON.stringify(pr));
         }
 
-        function updateTheme() {
-            const body = document.body;
-            const lvl = document.getElementById('level-name');
-            
-            if (score < 100) {
-                body.style.background = "#1a1a2e";
-                lvl.textContent = "Новичок";
-            } else if (score < 1000) {
-                body.style.background = "#2e1a1a";
-                lvl.textContent = "Начинающий кликер";
-            } else if (score < 10000) {
-                body.style.background = "#1a2e1a";
-                lvl.textContent = "Мастер кликов";
-                document.getElementById('score-container').style.color = "#ffd700";
-            } else {
-                body.style.background = "#2e1a2e";
-                lvl.textContent = "Легенда";
+        // Клик
+        document.getElementById('click-button').onclick = (e) => {
+            score += cPower;
+            showText(e.clientX, e.clientY, '+' + cPower, '#00ffcc');
+            update();
+        };
+
+        // Покупка
+        function buy(id, val, isA) {
+            if(score >= pr[id]) {
+                score -= pr[id];
+                if(isA) aPower += val; else cPower += val;
+                pr[id] = Math.round(pr[id] * 1.7);
+                update();
             }
         }
 
-        function save() {
-            localStorage.setItem('score', score);
-            localStorage.setItem('clickPower', clickPower);
-            localStorage.setItem('autoClick', autoClick);
-            localStorage.setItem('prices', JSON.stringify(prices));
-        }
+        // РУЛЕТКА
+        document.getElementById('btn-roll').onclick = () => {
+            if(score >= rPrice) {
+                score -= rPrice;
+                let chance = Math.random();
+                let res = document.getElementById('r-result');
+                
+                if(chance < 0.1) { // Супер-выигрыш (10%)
+                    let win = rPrice * 10;
+                    score += win;
+                    res.textContent = "ДЖЕКПОТ! +" + win;
+                    res.style.color = "#ffeb3b";
+                } else if(chance < 0.5) { // Просто выигрыш (40%)
+                    let win = Math.round(rPrice * 2);
+                    score += win;
+                    res.textContent = "Победа! +" + win;
+                    res.style.color = "#00ffcc";
+                } else { // Проигрыш (50%)
+                    res.textContent = "Ничего не выпало...";
+                    res.style.color = "#ff5252";
+                }
+                
+                rPrice = Math.round(rPrice * 1.2); // Цена рулетки растет
+                update();
+            }
+        };
 
-        function spawnText(x, y, text) {
-            const el = document.createElement('div');
+        function showText(x, y, txt, col) {
+            let el = document.createElement('div');
             el.className = 'floating-text';
-            el.textContent = '+' + text;
+            el.textContent = txt;
             el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.style.color = col;
             document.body.appendChild(el);
             setTimeout(() => el.remove(), 800);
         }
 
-        // Клики
-        document.getElementById('click-button').addEventListener('click', (e) => {
-            score += clickPower;
-            spawnText(e.clientX, e.clientY, clickPower);
-            updateDisplay();
-        });
+        setInterval(() => { if(aPower > 0) { score += aPower/10; update(); } }, 100);
 
-        // Покупки
-        function buy(type, amount, isAuto) {
-            if (score >= prices[type]) {
-                score -= prices[type];
-                if (isAuto) autoClick += amount; else clickPower += amount;
-                prices[type] = Math.round(prices[type] * 1.6);
-                updateDisplay();
-            }
-        }
-
-        document.getElementById('upg-click').onclick = () => buy('click', 1, false);
-        document.getElementById('upg-auto').onclick = () => buy('auto', 1, true);
-        document.getElementById('upg-mega').onclick = () => buy('mega', 10, false);
-        document.getElementById('upg-farm').onclick = () => buy('farm', 15, true);
-
-        setInterval(() => {
-            if (autoClick > 0) {
-                score += autoClick / 10; // Дробное прибавление для плавности
-                updateDisplay();
-            }
-        }, 100);
-
-        function resetGame() {
-            if(confirm("Сбросить всё?")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
+        function resetGame() { if(confirm("Сбросить?")) { localStorage.clear(); location.reload(); } }
+        
         function shareProgress() {
-            const text = `Я на уровне "${document.getElementById('level-name').textContent}" в ClickerRahat! Очков: ${Math.floor(score)}. Сможешь лучше? ${window.location.href}`;
+            const text = `В Clicker Empire у меня ${Math.floor(score)} очков! Попробуй обойти: ${window.location.href}`;
             navigator.clipboard.writeText(text).then(() => alert("Скопировано!"));
         }
 
-        init();
+        update();
     </script>
 </body>
 </html>
