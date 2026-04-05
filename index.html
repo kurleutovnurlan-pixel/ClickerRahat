@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Clicker Pro</title>
+    <title>Ultimate Clicker Pro + Fix</title>
     <style>
         body {
             display: flex;
@@ -12,153 +12,192 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            background: #121212;
+            background: radial-gradient(circle, #1a1a2e, #0f0f1a);
             color: white;
-            font-family: 'Arial', sans-serif;
-            overflow-x: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            user-select: none;
         }
 
         #score-container {
-            font-size: 56px;
-            font-weight: bold;
-            color: #00e676;
-            margin-bottom: 10px;
-            text-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+            font-size: 64px;
+            font-weight: 900;
+            color: #00ffcc;
+            margin-bottom: 5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            cursor: pointer;
         }
 
         .stat {
             font-size: 18px;
-            color: #bbb;
-            margin-bottom: 20px;
+            color: #888;
+            margin-bottom: 25px;
         }
 
         #click-button {
-            width: 180px;
-            height: 180px;
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
-            border: 8px solid #333;
-            background: #1e1e1e;
+            border: 10px solid #333;
+            background: #222;
             color: white;
-            font-size: 20px;
+            font-size: 24px;
+            font-weight: bold;
             cursor: pointer;
-            transition: 0.1s;
-            user-select: none;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 0.05s, box-shadow 0.1s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            z-index: 10;
         }
 
         #click-button:active {
-            transform: scale(0.92);
-            background: #252525;
-            border-color: #00e676;
+            transform: scale(0.9);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+            border-color: #00ffcc;
         }
 
         .shop {
-            margin-top: 30px;
+            margin-top: 40px;
             display: flex;
-            gap: 15px;
+            flex-direction: column;
+            gap: 10px;
+            width: 300px;
         }
 
         .upgrade-btn {
-            background: #2c2c2c;
-            border: 1px solid #444;
+            background: #252535;
+            border: 2px solid #444;
             color: white;
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 12px;
             cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            transition: 0.2s;
         }
 
         .upgrade-btn:hover:not(:disabled) {
-            background: #3d3d3d;
+            background: #353545;
+            border-color: #00ffcc;
         }
 
         .upgrade-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
-        /* Секретное уведомление */
-        #secret-msg {
-            position: fixed;
-            top: 20px;
-            color: #ff3d00;
+        /* Анимация вылетающих цифр */
+        .floating-text {
+            position: absolute;
+            color: #00ffcc;
             font-weight: bold;
-            display: none;
+            pointer-events: none;
+            animation: moveUp 0.8s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes moveUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div id="secret-msg">СЕКРЕТ АКТИВИРОВАН: +1000 ОЧКОВ!</div>
-
     <div id="score-container">0</div>
-    <div class="stat">За клик: <span id="per-click">1</span> | Авто: <span id="auto-val">0</span>/сек</div>
+    <div class="stat">Клик: +<span id="per-click">1</span> | Авто: <span id="auto-val">0</span>/сек</div>
 
-    <button id="click-button">ЖМИ!</button>
+    <button id="click-button">КЛИК!</button>
 
     <div class="shop">
-        <button class="upgrade-btn" id="upg-click">Сила клика (Цена: 15)</button>
-        <button class="upgrade-btn" id="upg-auto">Авто-клик (Цена: 50)</button>
+        <button class="upgrade-btn" id="upg-click">
+            <span>Сила клика</span>
+            <span id="price-click">15</span>
+        </button>
+        <button class="upgrade-btn" id="upg-auto">
+            <span>Авто-клик</span>
+            <span id="price-auto">50</span>
+        </button>
+        <button class="upgrade-btn" style="background:#442222" onclick="resetGame()">
+            <span>СБРОС ПРОГРЕССА</span>
+        </button>
     </div>
 
     <script>
-        // Данные игры
-        let score = parseInt(localStorage.getItem('score')) || 0;
+        // Загрузка данных или стандартные значения
+        let score = parseFloat(localStorage.getItem('score')) || 0;
         let clickPower = parseInt(localStorage.getItem('clickPower')) || 1;
         let autoClick = parseInt(localStorage.getItem('autoClick')) || 0;
-        
-        let clickPrice = 15;
-        let autoPrice = 50;
+        let clickPrice = parseInt(localStorage.getItem('clickPrice')) || 15;
+        let autoPrice = parseInt(localStorage.getItem('autoPrice')) || 50;
 
-        // Элементы
         const scoreEl = document.getElementById('score-container');
         const clickPowerEl = document.getElementById('per-click');
         const autoValEl = document.getElementById('auto-val');
+        
         const btnClick = document.getElementById('upg-click');
+        const priceClickEl = document.getElementById('price-click');
+        
         const btnAuto = document.getElementById('upg-auto');
+        const priceAutoEl = document.getElementById('price-auto');
 
         function updateDisplay() {
             scoreEl.textContent = Math.floor(score);
             clickPowerEl.textContent = clickPower;
             autoValEl.textContent = autoClick;
-            btnClick.textContent = `Сила клика (Цена: ${clickPrice})`;
-            btnAuto.textContent = `Авто-клик (Цена: ${autoPrice})`;
+            
+            priceClickEl.textContent = clickPrice;
+            priceAutoEl.textContent = autoPrice;
             
             btnClick.disabled = score < clickPrice;
             btnAuto.disabled = score < autoPrice;
 
-            // Сохранение в память браузера
+            // СОХРАНЕНИЕ ВСЕХ ДАННЫХ (включая цены)
             localStorage.setItem('score', score);
             localStorage.setItem('clickPower', clickPower);
             localStorage.setItem('autoClick', autoClick);
+            localStorage.setItem('clickPrice', clickPrice);
+            localStorage.setItem('autoPrice', autoPrice);
         }
 
-        // Клик
-        document.getElementById('click-button').addEventListener('click', () => {
+        // Эффект вылетающих цифр
+        function spawnText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.textContent = '+' + text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        // Главный клик
+        document.getElementById('click-button').addEventListener('click', (e) => {
             score += clickPower;
+            spawnText(e.clientX, e.clientY, clickPower);
             updateDisplay();
         });
 
-        // Прокачка силы клика
+        // Покупка силы клика
         btnClick.addEventListener('click', () => {
             if (score >= clickPrice) {
                 score -= clickPrice;
                 clickPower++;
-                clickPrice = Math.round(clickPrice * 1.5);
+                clickPrice = Math.round(clickPrice * 1.6);
                 updateDisplay();
             }
         });
 
-        // Прокачка авто-клика
+        // Покупка авто-клика
         btnAuto.addEventListener('click', () => {
             if (score >= autoPrice) {
                 score -= autoPrice;
                 autoClick++;
-                autoPrice = Math.round(autoPrice * 1.7);
+                autoPrice = Math.round(autoPrice * 1.8);
                 updateDisplay();
             }
         });
 
-        // Работа авто-клика (раз в секунду)
+        // Авто-клик (работает каждую секунду)
         setInterval(() => {
             if (autoClick > 0) {
                 score += autoClick;
@@ -166,21 +205,24 @@
             }
         }, 1000);
 
-        // --- СЕКРЕТКА ---
-        // Если быстро нажать на цифру счета 5 раз подряд — дается бонус
-        let secretCounter = 0;
+        function resetGame() {
+            if(confirm("Точно сбросить всё?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Секретка: Клик по счету дает рандомный бонус от 1 до 50 (шанс 10%)
         scoreEl.addEventListener('click', () => {
-            secretCounter++;
-            if (secretCounter === 5) {
-                score += 1000;
-                document.getElementById('secret-msg').style.display = 'block';
-                setTimeout(() => { document.getElementById('secret-msg').style.display = 'none'; }, 2000);
-                secretCounter = 0;
+            if (Math.random() < 0.1) {
+                let bonus = Math.floor(Math.random() * 50) + 1;
+                score += bonus;
+                spawnText(window.innerWidth/2, 100, bonus + " БОНУС!");
                 updateDisplay();
             }
         });
 
-        updateDisplay(); // Инициализация при старте
+        updateDisplay();
     </script>
 </body>
 </html>
