@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Clicker Pro + Fix</title>
+    <title>Ultimate Clicker Pro + Share</title>
     <style>
         body {
             display: flex;
@@ -25,7 +25,6 @@
             color: #00ffcc;
             margin-bottom: 5px;
             text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
-            cursor: pointer;
         }
 
         .stat {
@@ -35,32 +34,27 @@
         }
 
         #click-button {
-            width: 200px;
-            height: 200px;
+            width: 180px;
+            height: 180px;
             border-radius: 50%;
-            border: 10px solid #333;
+            border: 8px solid #333;
             background: #222;
             color: white;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.05s, box-shadow 0.1s;
+            transition: transform 0.05s;
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            z-index: 10;
         }
 
-        #click-button:active {
-            transform: scale(0.9);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
-            border-color: #00ffcc;
-        }
+        #click-button:active { transform: scale(0.9); border-color: #00ffcc; }
 
         .shop {
-            margin-top: 40px;
+            margin-top: 30px;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            width: 300px;
+            width: 280px;
         }
 
         .upgrade-btn {
@@ -72,27 +66,27 @@
             cursor: pointer;
             display: flex;
             justify-content: space-between;
-            transition: 0.2s;
         }
 
-        .upgrade-btn:hover:not(:disabled) {
-            background: #353545;
-            border-color: #00ffcc;
+        .upgrade-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .share-btn {
+            margin-top: 15px;
+            background: #007bff;
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
         }
 
-        .upgrade-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        /* Анимация вылетающих цифр */
         .floating-text {
             position: absolute;
             color: #00ffcc;
             font-weight: bold;
             pointer-events: none;
             animation: moveUp 0.8s ease-out forwards;
-            z-index: 100;
         }
 
         @keyframes moveUp {
@@ -110,48 +104,41 @@
 
     <div class="shop">
         <button class="upgrade-btn" id="upg-click">
-            <span>Сила клика</span>
-            <span id="price-click">15</span>
+            <span>Сила клика</span> <span id="price-click">15</span>
         </button>
         <button class="upgrade-btn" id="upg-auto">
-            <span>Авто-клик</span>
-            <span id="price-auto">50</span>
+            <span>Авто-клик</span> <span id="price-auto">50</span>
         </button>
-        <button class="upgrade-btn" style="background:#442222" onclick="resetGame()">
-            <span>СБРОС ПРОГРЕССА</span>
+        
+        <button class="share-btn" onclick="shareProgress()">ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ</button>
+        
+        <button class="upgrade-btn" style="background:#442222; margin-top: 20px;" onclick="resetGame()">
+            <span>СБРОСИТЬ ВСЁ</span>
         </button>
     </div>
 
     <script>
-        // Загрузка данных или стандартные значения
-        let score = parseFloat(localStorage.getItem('score')) || 0;
-        let clickPower = parseInt(localStorage.getItem('clickPower')) || 1;
-        let autoClick = parseInt(localStorage.getItem('autoClick')) || 0;
-        let clickPrice = parseInt(localStorage.getItem('clickPrice')) || 15;
-        let autoPrice = parseInt(localStorage.getItem('autoPrice')) || 50;
+        // Загрузка или стандарт
+        let score, clickPower, autoClick, clickPrice, autoPrice;
 
-        const scoreEl = document.getElementById('score-container');
-        const clickPowerEl = document.getElementById('per-click');
-        const autoValEl = document.getElementById('auto-val');
-        
-        const btnClick = document.getElementById('upg-click');
-        const priceClickEl = document.getElementById('price-click');
-        
-        const btnAuto = document.getElementById('upg-auto');
-        const priceAutoEl = document.getElementById('price-auto');
+        function loadData() {
+            score = parseFloat(localStorage.getItem('score')) || 0;
+            clickPower = parseInt(localStorage.getItem('clickPower')) || 1;
+            autoClick = parseInt(localStorage.getItem('autoClick')) || 0;
+            clickPrice = parseInt(localStorage.getItem('clickPrice')) || 15;
+            autoPrice = parseInt(localStorage.getItem('autoPrice')) || 50;
+        }
 
         function updateDisplay() {
-            scoreEl.textContent = Math.floor(score);
-            clickPowerEl.textContent = clickPower;
-            autoValEl.textContent = autoClick;
+            document.getElementById('score-container').textContent = Math.floor(score);
+            document.getElementById('per-click').textContent = clickPower;
+            document.getElementById('auto-val').textContent = autoClick;
+            document.getElementById('price-click').textContent = clickPrice;
+            document.getElementById('price-auto').textContent = autoPrice;
             
-            priceClickEl.textContent = clickPrice;
-            priceAutoEl.textContent = autoPrice;
-            
-            btnClick.disabled = score < clickPrice;
-            btnAuto.disabled = score < autoPrice;
+            document.getElementById('upg-click').disabled = score < clickPrice;
+            document.getElementById('upg-auto').disabled = score < autoPrice;
 
-            // СОХРАНЕНИЕ ВСЕХ ДАННЫХ (включая цены)
             localStorage.setItem('score', score);
             localStorage.setItem('clickPower', clickPower);
             localStorage.setItem('autoClick', autoClick);
@@ -159,26 +146,22 @@
             localStorage.setItem('autoPrice', autoPrice);
         }
 
-        // Эффект вылетающих цифр
         function spawnText(x, y, text) {
             const el = document.createElement('div');
             el.className = 'floating-text';
             el.textContent = '+' + text;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
+            el.style.left = x + 'px'; el.style.top = y + 'px';
             document.body.appendChild(el);
             setTimeout(() => el.remove(), 800);
         }
 
-        // Главный клик
         document.getElementById('click-button').addEventListener('click', (e) => {
             score += clickPower;
             spawnText(e.clientX, e.clientY, clickPower);
             updateDisplay();
         });
 
-        // Покупка силы клика
-        btnClick.addEventListener('click', () => {
+        document.getElementById('upg-click').addEventListener('click', () => {
             if (score >= clickPrice) {
                 score -= clickPrice;
                 clickPower++;
@@ -187,8 +170,7 @@
             }
         });
 
-        // Покупка авто-клика
-        btnAuto.addEventListener('click', () => {
+        document.getElementById('upg-auto').addEventListener('click', () => {
             if (score >= autoPrice) {
                 score -= autoPrice;
                 autoClick++;
@@ -197,7 +179,6 @@
             }
         });
 
-        // Авто-клик (работает каждую секунду)
         setInterval(() => {
             if (autoClick > 0) {
                 score += autoClick;
@@ -205,23 +186,25 @@
             }
         }, 1000);
 
+        // ФИКС СБРОСА
         function resetGame() {
-            if(confirm("Точно сбросить всё?")) {
+            if(confirm("Точно сбросить весь прогресс?")) {
                 localStorage.clear();
-                location.reload();
+                loadData(); // Перезагружаем переменные в коде
+                updateDisplay(); // Обновляем экран
+                alert("Прогресс обнулен!");
             }
         }
 
-        // Секретка: Клик по счету дает рандомный бонус от 1 до 50 (шанс 10%)
-        scoreEl.addEventListener('click', () => {
-            if (Math.random() < 0.1) {
-                let bonus = Math.floor(Math.random() * 50) + 1;
-                score += bonus;
-                spawnText(window.innerWidth/2, 100, bonus + " БОНУС!");
-                updateDisplay();
-            }
-        });
+        // ФУНКЦИЯ ПОДЕЛИТЬСЯ
+        function shareProgress() {
+            const text = `Я набрал ${Math.floor(score)} очков в ClickerRahat! Моя сила клика: ${clickPower}. Попробуй обойти меня: ${window.location.href}`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Текст скопирован! Отправь его друзьям.");
+            });
+        }
 
+        loadData();
         updateDisplay();
     </script>
 </body>
